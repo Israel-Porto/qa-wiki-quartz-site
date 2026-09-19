@@ -1,3 +1,21 @@
 @use "./variables.scss" as *;
 
-// put your custom CSS here!
+.page-header {
+  margin-top: 3rem;
+}
+
+.sidebar {
+  padding-top: 2rem;
+}
+
+.breadcrumb-container {
+  margin-bottom: 1rem;
+}
+
+.note-properties {
+  margin-bottom: 1rem;
+}
+
+.toc:has(button.toc-header.collapsed) {
+    flex: 0 3rem;
+}
