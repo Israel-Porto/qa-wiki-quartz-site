@@ -7,7 +7,7 @@ configuration:
   analytics:
     provider: plausible
   locale: en-US
-  baseUrl: qa-wiki
+  baseUrl: israel-porto.github.io/qa-wiki
   ignorePatterns:
     - private
     - templates
