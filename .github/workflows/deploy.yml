@@ -42,7 +42,6 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-          cache-dependency-path: notes/wiki/requirements.txt
 
       # 4. Instala dependências do script Python
       - name: Install Python dependencies
