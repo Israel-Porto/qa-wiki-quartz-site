@@ -1,0 +1,88 @@
+name: Deploy Quartz Site to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Permite disparar manualmente
+  repository_dispatch: # Permite disparar via webhook quando a wiki atualizar
+    types: [wiki-updated]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # 1. Clona o próprio repositório do Quartz (público)
+      - name: Checkout Quartz Engine
+        uses: actions/checkout@v4
+
+      # 2. Clona o repositório PRIVADO da wiki usando a chave SSH
+      - name: Checkout Private Wiki
+        uses: actions/checkout@v4
+        with:
+          repository: Israel-Porto/qa-wiki
+          ssh-key: ${{ secrets.WIKI_KEY }}
+          path: notes
+
+      # 3. Configura o Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: notes/requirements.txt
+
+      # 4. Instala dependências do script Python
+      - name: Install Python dependencies
+        working-directory: notes
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      # 5. Executa o script que gera as notas (a partir da pasta da wiki)
+      - name: Run publication script
+        working-directory: notes
+        run: |
+          python scripts/publish_notes.py --verbose
+
+      # 6. Copia as notas geradas em wiki/.publications para content/
+      - name: Copy generated notes to Quartz content
+        run: |
+          rm -rf content
+          mkdir -p content
+          cp -a notes/.publications/. content/
+
+      # 7. Setup do Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 8. Instala dependências do Quartz e compila o site
+      - name: Build Quartz Site
+        run: |
+          npm ci
+          npx quartz build
+
+      # 9. Prepara os arquivos estáticos gerados em public/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      # 10. Publica no GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
